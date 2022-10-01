@@ -3,6 +3,8 @@ package main
 import (
 	"BookingApp/helper"
 	"fmt"
+	"sync"
+	"time"
 )
 
 var eventName = "Go Events"
@@ -19,42 +21,43 @@ type UserData struct {
 	numberOfTickets uint
 }
 
+var wg = sync.WaitGroup{}
+
 func main() {
 
 	greetUsers()
 
-	for {
+	firstName, lastName, email, userTickets := getUSerInput()
 
-		firstName, lastName, email, userTickets := getUSerInput()
+	isValidName, isValidEmail, isValidTicketNumber := helper.ValidateUSerInput(firstName, lastName, email, userTickets, remainingTickets)
 
-		isValidName, isValidEmail, isValidTicketNumber := helper.ValidateUSerInput(firstName, lastName, email, userTickets, remainingTickets)
+	if isValidName && isValidEmail && isValidTicketNumber {
 
-		if isValidName && isValidEmail && isValidTicketNumber {
+		bookTicket(userTickets, firstName, lastName, email)
 
-			bookTicket(userTickets, firstName, lastName, email)
+		wg.Add(1)
+		go sendTicket(userTickets, firstName, lastName, email)
 
-			firstNames := getFirstNames()
-			fmt.Printf("The first name of bookings are: %v\n", firstNames)
+		firstNames := getFirstNames()
+		fmt.Printf("The first name of bookings are: %v\n", firstNames)
 
-			if remainingTickets == 0 {
-				fmt.Println("Our event is booked out. Come back for the next event.")
-				break
-			}
-		} else {
+		if remainingTickets == 0 {
+			fmt.Println("Our event is booked out. Come back for the next event.")
+		}
+	} else {
 
-			if !isValidName {
-				fmt.Println("First name or last name you entered is too short")
-			}
-			if !isValidEmail {
-				fmt.Println("Email you entered is not contain @ sign")
-			}
-			if !isValidTicketNumber {
-				fmt.Println("Number of tickets you entered is invalid")
-			}
-
+		if !isValidName {
+			fmt.Println("First name or last name you entered is too short")
+		}
+		if !isValidEmail {
+			fmt.Println("Email you entered is not contain @ sign")
+		}
+		if !isValidTicketNumber {
+			fmt.Println("Number of tickets you entered is invalid")
 		}
 
 	}
+	wg.Wait()
 
 }
 
@@ -108,4 +111,13 @@ func bookTicket(userTickets uint, firstName string, lastName string, email strin
 
 	fmt.Printf("Thank you %v %v for booking %v tickets. You will receive a confirmation email at %v.\n", firstName, lastName, userTickets, email)
 	fmt.Printf("%v tickets remaining for %v\n", remainingTickets, eventName)
+}
+
+func sendTicket(userTickets uint, firstName string, lastName string, email string) {
+	time.Sleep(10 * time.Second)
+	var ticket = fmt.Sprintf("%v tickets for %v %v", userTickets, firstName, lastName)
+	fmt.Println("###################")
+	fmt.Printf("Sending ticket:\n %v \nto email address %v\n", ticket, email)
+	fmt.Println("###################")
+	wg.Done()
 }
